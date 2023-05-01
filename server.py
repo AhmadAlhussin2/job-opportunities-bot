@@ -2,7 +2,7 @@ import telebot
 import os
 import psycopg2
 from dotenv import load_dotenv
-from markups import job_type_markup, job_format_markup, stop_requirments_markup
+from markups import job_type_markup,job_format_markup, stop_requirments_markup
 from constants import *
 from telebot import types
 
@@ -14,7 +14,9 @@ USER = os.environ["USER"]
 DB_PASSWORD = os.environ["DB_PASSWORD"]
 
 bot = telebot.TeleBot(API_KEY)
-
+global job,requirements
+job = {}
+requirements = {}
 
 @bot.message_handler(commands=["post_job"])
 def post_job(message):
@@ -23,12 +25,11 @@ def post_job(message):
     Args:
         message (types.Message): a command to initite the process (post_job for now)
     """
-    global job
-    job = {}
     bot.send_message(
         message.chat.id,
         "Thanks for using job opportunities bot\nTo post a new job please answer the following questions:",
     )
+    job[message.from_user.username] = {}
     msg = bot.send_message(message.chat.id, "What is the job title?")
     bot.register_next_step_handler(msg, wait_for_job_name)
 
@@ -41,9 +42,9 @@ def callback_query(call):
         call (types.CallbackQuery): the callback data to be handled
     """
     if call.data in (job.lower() for job in JOB_TYPES):
-        register_job_type(call.message, call.data)
+        register_job_type(call.message, call)
     elif call.data in JOB_FORMATS:
-        register_job_format(call.message, call.data)
+        register_job_format(call.message, call)
     bot.answer_callback_query(callback_query_id=call.id, show_alert=False)
 
 
@@ -56,7 +57,7 @@ def wait_for_job_name(message):
     chat_id = message.chat.id
     name = message.text
     bot.send_message(chat_id, f"Okay you chose '{name}' to be you job's name")
-    job["job_title"] = name
+    job[message.from_user.username]["job_title"] = name
     bot.send_message(
         chat_id, "What is the type of your job?", reply_markup=job_type_markup()
     )
@@ -70,7 +71,7 @@ def wait_for_job_location(message):
     """
     chat_id = message.chat.id
     location = message.text
-    job["job_location"] = location
+    job[message.from_user.username]["job_location"] = location
     bot.send_message(chat_id, f"okay {location} is set to be your location")
     start_taking_requirements(chat_id, message)
 
@@ -83,8 +84,8 @@ def register_job_type(message, option):
         option (string): the option chosen by the user
     """
     chat_id = message.chat.id
-    bot.send_message(chat_id, f"Okay {option} is the type of your job")
-    job["job_type"] = option
+    bot.send_message(chat_id, f"Okay {option.data} is the type of your job")
+    job[option.from_user.username]["job_type"] = option.data
     bot.send_message(
         chat_id, "What is the format of the job?", reply_markup=job_format_markup()
     )
@@ -97,12 +98,12 @@ def register_job_format(message, option):
         message (types.Message): information about the user
         option (string): the option chosen by the user
     """
-    job["job_format"] = option
+    job[option.from_user.username]["job_format"] = option.data
     chat_id = message.chat.id
-    if option != "remote":
+    if option.data != "remote":
         msg = bot.send_message(
             chat_id,
-            f"Since you chose your job to be {option}, please write the location of your office:",
+            f"Since you chose your job to be {option.data}, please write the location of your office:",
         )
         bot.register_next_step_handler(msg, wait_for_job_location)
     else:
@@ -115,8 +116,7 @@ def start_taking_requirements(chat_id, message):
         f"Finally, please add the requirements of your job in the format: requirement description/years of experience\n \
 For example, you can write: c++ / 3 to indicate that you need a person with three years of experience in c++",
     )
-    global requirements
-    requirements = []
+    requirements[message.chat.username] = []
     wait_for_job_requirements(message)
 
 
@@ -133,7 +133,7 @@ def register_new_requirement(message):
             "okay got the requirements",
             reply_markup=types.ReplyKeyboardRemove(),
         )
-        save_job_to_db()
+        save_job_to_db(message)
         return
     text = (message.text).split("/")
     if len(text) > 1:
@@ -146,7 +146,7 @@ def register_new_requirement(message):
     elif not text[1].isnumeric():
         bot.send_message(chat_id, "Please add the years of experience as a number")
     else:
-        requirements.append(
+        requirements[message.chat.username].append(
             {"requirement_description": text[0], "requirement_duration": text[1]}
         )
     wait_for_job_requirements(message)
@@ -197,21 +197,27 @@ def insert_directory(dir, table):
     return "INSERT INTO %s (%s) VALUES ( %s )" % (table, columns, placeholders)
 
 
-def save_job_to_db():
-    """function to save the retrieved job to the database"""
+def save_job_to_db(message):
+    """function to save the retrieved job to the database
+    
+    Args:
+        message (types.Message): information about the sender
+    """
     try:
         conn = connect_to_db()
         cur = conn.cursor()
-        sql = insert_directory(job, "jobs")
-        cur.execute(sql + "RETURNING job_id", list(job.values()))
+        sql = insert_directory(job[message.from_user.username], "jobs")
+        cur.execute(sql + "RETURNING job_id", list(job[message.from_user.username].values()))
         lst = cur.fetchone()
         lst_id = lst[0]
-        for element in requirements:
+        for element in requirements[message.from_user.username]:
             element["job_id"] = lst_id
             sql = insert_directory(element, "requirements")
             cur.execute(sql, list(element.values()))
         cur.close()
         conn.commit()
+        del job[message.from_user.username]
+        del requirements[message.from_user.username]
     except psycopg2.DatabaseError as error:
         print(error)
 
