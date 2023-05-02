@@ -1,29 +1,28 @@
 import telebot
 import os
-import psycopg2
 from dotenv import load_dotenv
-from markups import job_type_markup,job_format_markup, stop_requirments_markup
+from markups import *
+from database import create_tables, save_job_to_db, fetch_jobs, fetch_requirements
 from constants import *
 from telebot import types
 
 
 load_dotenv()
 API_KEY = os.environ["API_KEY"]
-HOST = os.environ["HOST"]
-USER = os.environ["USER"]
-DB_PASSWORD = os.environ["DB_PASSWORD"]
 
 bot = telebot.TeleBot(API_KEY)
-global job,requirements
+global job, requirements, skills
 job = {}
 requirements = {}
+skills = {}
+
 
 @bot.message_handler(commands=["post_job"])
 def post_job(message):
     """post job function to handle recieveing job details and adding them to the databse
 
     Args:
-        message (types.Message): a command to initite the process (post_job for now)
+        message (types.Message): a command to initiate the process (post_job for now)
     """
     bot.send_message(
         message.chat.id,
@@ -32,6 +31,25 @@ def post_job(message):
     job[message.from_user.username] = {}
     msg = bot.send_message(message.chat.id, "What is the job title?")
     bot.register_next_step_handler(msg, wait_for_job_name)
+
+
+@bot.message_handler(commands=["find_job"])
+def find_job(message):
+    """find jobs related to the candidate's skills
+
+    Args:
+        message (types.Message): a command to initiate the process (find_job)
+    """
+    bot.send_message(
+        message.chat.id,
+        "Thanks for using job opportunities bot\nTo find opportunities please answer the following questions:",
+    )
+    skills[message.from_user.username] = {}
+    msg = bot.send_message(
+        message.chat.id,
+        "What type of jobs are you interested in?",
+        reply_markup=job_find_type_markup(),
+    )
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -43,10 +61,18 @@ def callback_query(call):
     """
     if call.data in (job.lower() for job in JOB_TYPES):
         register_job_type(call.message, call)
+    elif call.data in ("find_" + job.lower() for job in JOB_TYPES):
+        add_job_type_filter(call.message, call)
     elif call.data in JOB_FORMATS:
         register_job_format(call.message, call)
+    elif call.data in ("find_" + job for job in JOB_FORMATS):
+        add_job_format_filter(call.message, call)
     bot.answer_callback_query(callback_query_id=call.id, show_alert=False)
 
+
+def take_job_location(message, next_step, storage):
+    storage["job_location"] = message.text
+    next_step(message.chat.id, message)
 
 def wait_for_job_name(message):
     """function to retrieve the job name from the user
@@ -63,17 +89,30 @@ def wait_for_job_name(message):
     )
 
 
-def wait_for_job_location(message):
-    """function to retrive the job location
-
-    Args:
-        message (types.Message): job location with inforamtion about user
-    """
+def add_job_type_filter(message, option):
     chat_id = message.chat.id
-    location = message.text
-    job[message.from_user.username]["job_location"] = location
-    bot.send_message(chat_id, f"okay {location} is set to be your location")
-    start_taking_requirements(chat_id, message)
+    skills[option.from_user.username]["job_type"] = option.data[5:]
+    bot.edit_message_text(
+        chat_id=chat_id,
+        message_id=message.message_id,
+        text="Okay, and what is your preferable format?",
+        reply_markup=job_find_format_markup(),
+    )
+
+
+def add_job_format_filter(message, option):
+    chat_id = message.chat.id
+    skills[option.from_user.username]["job_format"] = option.data[5:]
+    if option.data != "find_remote":
+        msg = bot.send_message(chat_id, "Okay, then please send your location")
+        bot.register_next_step_handler(
+            msg,
+            lambda msg: take_job_location(
+                msg, start_taking_skills, skills[option.from_user.username]
+            ),
+        )
+    else:
+        start_taking_skills(chat_id, message)
 
 
 def register_job_type(message, option):
@@ -105,9 +144,24 @@ def register_job_format(message, option):
             chat_id,
             f"Since you chose your job to be {option.data}, please write the location of your office:",
         )
-        bot.register_next_step_handler(msg, wait_for_job_location)
+        bot.register_next_step_handler(
+            msg,
+            lambda msg: take_job_location(
+                msg, start_taking_requirements, job[option.from_user.username]
+            ),
+        )
     else:
         start_taking_requirements(chat_id, message)
+
+
+def start_taking_skills(chat_id, message):
+    bot.send_message(
+        chat_id,
+        "Now please add some of your skills. You can add them in the format: skill description / years of experience\n\
+For example, you can write: c++ / 3 to indicate that you have three years of experience in c++",
+    )
+    skills[message.chat.username]["skills"] = []
+    wait_for_skills(message)
 
 
 def start_taking_requirements(chat_id, message):
@@ -133,7 +187,7 @@ def register_new_requirement(message):
             "okay got the requirements",
             reply_markup=types.ReplyKeyboardRemove(),
         )
-        save_job_to_db(message)
+        save_job_to_db(message, job, requirements)
         return
     text = (message.text).split("/")
     if len(text) > 1:
@@ -167,87 +221,63 @@ def wait_for_job_requirements(message):
     bot.register_next_step_handler(msg, register_new_requirement)
 
 
-def connect_to_db():
-    """function to connect to the database
-
-    Returns:
-        connection object: the connection object to the database
-    """
-    try:
-        conn = psycopg2.connect(
-            host=HOST, database="telegram-bot", user=USER, password=DB_PASSWORD
+def register_new_skill(message):
+    chat_id = message.chat.id
+    if message.text == "stop adding skills":
+        bot.send_message(
+            chat_id,
+            "okay got the skills",
+            reply_markup=types.ReplyKeyboardRemove(),
         )
-        return conn
-    except psycopg2.DatabaseError as error:
-        print(error)
-
-
-def insert_directory(dir, table):
-    """helper function to insert a dictionary to the table
-
-    Args:
-        dir (dictionary): a dictionary to be inserted in the database
-        table (string): a table where the dictionary will be inserted
-
-    Returns:
-        string: SQL command to excute it on a connection
-    """
-    placeholders = ", ".join(["%s"] * len(dir))
-    columns = ", ".join(dir.keys())
-    return "INSERT INTO %s (%s) VALUES ( %s )" % (table, columns, placeholders)
-
-
-def save_job_to_db(message):
-    """function to save the retrieved job to the database
-    
-    Args:
-        message (types.Message): information about the sender
-    """
-    try:
-        conn = connect_to_db()
-        cur = conn.cursor()
-        sql = insert_directory(job[message.from_user.username], "jobs")
-        cur.execute(sql + "RETURNING job_id", list(job[message.from_user.username].values()))
-        lst = cur.fetchone()
-        lst_id = lst[0]
-        for element in requirements[message.from_user.username]:
-            element["job_id"] = lst_id
-            sql = insert_directory(element, "requirements")
-            cur.execute(sql, list(element.values()))
-        cur.close()
-        conn.commit()
-        del job[message.from_user.username]
-        del requirements[message.from_user.username]
-    except psycopg2.DatabaseError as error:
-        print(error)
-
-
-def create_tables():
-    """function to create tables in the database
-    """
-    try:
-        conn = connect_to_db()
-        cur = conn.cursor()
-        cur.execute(
-            "CREATE TABLE IF NOT EXISTS jobs(\
-            job_id SERIAL PRIMARY KEY,\
-            job_title VARCHAR(150),\
-            job_format VARCHAR(20),\
-            job_type varchar(20),\
-            job_location VARCHAR(150) NULL);"
+        jobs = fetch_jobs(message,skills)
+        for i in jobs:
+            job_offer = i[1]+"\n"
+            job_offer += i[2]
+            if i[2] != 'remote':
+                job_offer += f" ({i[4]})"
+            job_offer+="\n\n"
+            job_offer+="About the job\n"
+            job_offer+=f"Job title: {i[1]}\n"
+            job_offer+=f"Job type: {i[3]}\n"
+            job_offer+=f"Job format: {i[2]}"
+            if i[2] != 'remote':
+                job_offer += f" ({i[4]})"
+            job_offer+="\n\n"
+            job_offer+="Requirements:"
+            requirement_list = fetch_requirements(i[0])
+            print(requirement_list)
+            for j in requirement_list:
+                job_offer += f"\n- {j[0]} / {j[1]} year"
+                if j[1] != 1:
+                    job_offer += "s"
+            
+            bot.send_message(chat_id,job_offer)
+        return
+    text = (message.text).split("/")
+    if len(text) > 1:
+        text[1] = text[1].strip()
+    if len(text) != 2:
+        bot.send_message(
+            chat_id,
+            "Please make sure you use the format: skill / years of experience",
         )
-        cur.execute(
-            "CREATE TABLE IF NOT EXISTS requirements(\
-            requirement_id SERIAL PRIMARY KEY,\
-            requirement_description TEXT,\
-            requirement_duration INTEGER DEFAULT 0,\
-            job_id INTEGER,\
-            CONSTRAINT job_id FOREIGN KEY(job_id) REFERENCES jobs(job_id));"
+    elif not text[1].isnumeric():
+        bot.send_message(chat_id, "Please add the years of experience as a number")
+    else:
+        skills[message.chat.username]["skills"].append(
+            {"skill_description": text[0], "skill_duration": text[1]}
         )
-        cur.close()
-        conn.commit()
-    except psycopg2.DatabaseError as error:
-        print(error)
+    wait_for_skills(message)
+
+
+def wait_for_skills(message):
+    chat_id = message.chat.id
+    msg = bot.send_message(
+        chat_id,
+        "Add a skill:",
+        reply_markup=stop_skills_markup(),
+    )
+    bot.register_next_step_handler(msg, register_new_skill)
 
 
 if __name__ == "__main__":
