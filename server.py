@@ -71,8 +71,16 @@ def callback_query(call):
 
 
 def take_job_location(message, next_step, storage):
+    """Middleware to forward requests
+
+    Args:
+        message (types.Message): information about the user, job location
+        next_step (callable): the next function that will be called
+        storage (dictionary): storage in the program
+    """
     storage["job_location"] = message.text
     next_step(message.chat.id, message)
+
 
 def wait_for_job_name(message):
     """function to retrieve the job name from the user
@@ -90,6 +98,12 @@ def wait_for_job_name(message):
 
 
 def add_job_type_filter(message, option):
+    """adding jobs filters from the client
+
+    Args:
+        message (types.Message): infromation about the user
+        option (types.Message): response from the user about the job type
+    """
     chat_id = message.chat.id
     skills[option.from_user.username]["job_type"] = option.data[5:]
     bot.edit_message_text(
@@ -101,6 +115,12 @@ def add_job_type_filter(message, option):
 
 
 def add_job_format_filter(message, option):
+    """take job format from the user
+
+    Args:
+        message (types.Message): infromation about the user
+        option (types.Message): information abouth the usrer's choice about job format
+    """
     chat_id = message.chat.id
     skills[option.from_user.username]["job_format"] = option.data[5:]
     if option.data != "find_remote":
@@ -155,6 +175,12 @@ def register_job_format(message, option):
 
 
 def start_taking_skills(chat_id, message):
+    """start taking skills from client to find him the best match
+
+    Args:
+        chat_id (int): the chat it 
+        message (types.Message): information about the user
+    """
     bot.send_message(
         chat_id,
         "Now please add some of your skills. You can add them in the format: skill description / years of experience\n\
@@ -165,6 +191,12 @@ For example, you can write: c++ / 3 to indicate that you have three years of exp
 
 
 def start_taking_requirements(chat_id, message):
+    """Take the requirements from the user to include them as prerequests for joining the job
+
+    Args:
+        chat_id (int): chat ID where the messages will be sent
+        message (types.Message): information about the user
+    """
     bot.send_message(
         chat_id,
         f"Finally, please add the requirements of your job in the format: requirement description/years of experience\n \
@@ -172,6 +204,16 @@ For example, you can write: c++ / 3 to indicate that you need a person with thre
     )
     requirements[message.chat.username] = []
     wait_for_job_requirements(message)
+
+
+def take_contact_method(message):
+    """take contact method from the user
+
+    Args:
+        message (types.Message): message info
+    """
+    job[message.from_user.username]["contact"] = message.text
+    save_job_to_db(message.from_user.username, job, requirements, message.chat.id)
 
 
 def register_new_requirement(message):
@@ -187,7 +229,8 @@ def register_new_requirement(message):
             "okay got the requirements",
             reply_markup=types.ReplyKeyboardRemove(),
         )
-        save_job_to_db(message, job, requirements)
+        msg = bot.send_message(chat_id, "Please send a contact method:")
+        bot.register_next_step_handler(msg, take_contact_method)
         return
     text = (message.text).split("/")
     if len(text) > 1:
@@ -222,6 +265,11 @@ def wait_for_job_requirements(message):
 
 
 def register_new_skill(message):
+    """take another skill from the user, until they press stop button
+
+    Args:
+        message (types.Message): information about the user
+    """
     chat_id = message.chat.id
     if message.text == "stop adding skills":
         bot.send_message(
@@ -229,29 +277,31 @@ def register_new_skill(message):
             "okay got the skills",
             reply_markup=types.ReplyKeyboardRemove(),
         )
-        jobs = fetch_jobs(message,skills)
+        jobs = fetch_jobs(message.from_user.username, skills, message.chat.id)
         for i in jobs:
-            job_offer = i[1]+"\n"
+            job_offer = i[1] + "\n"
             job_offer += i[2]
-            if i[2] != 'remote':
+            if i[2] != "remote":
                 job_offer += f" ({i[4]})"
-            job_offer+="\n\n"
-            job_offer+="About the job\n"
-            job_offer+=f"Job title: {i[1]}\n"
-            job_offer+=f"Job type: {i[3]}\n"
-            job_offer+=f"Job format: {i[2]}"
-            if i[2] != 'remote':
+            job_offer += "\n\n"
+            job_offer += "About the job\n"
+            job_offer += f"Job title: {i[1]}\n"
+            job_offer += f"Job type: {i[3]}\n"
+            job_offer += f"Job format: {i[2]}"
+            if i[2] != "remote":
                 job_offer += f" ({i[4]})"
-            job_offer+="\n\n"
-            job_offer+="Requirements:"
-            requirement_list = fetch_requirements(i[0])
+            job_offer += "\n\n"
+            job_offer += "Requirements:"
+            requirement_list = fetch_requirements(i[0], message.chat.id)
             print(requirement_list)
             for j in requirement_list:
                 job_offer += f"\n- {j[0]} / {j[1]} year"
                 if j[1] != 1:
                     job_offer += "s"
-            
-            bot.send_message(chat_id,job_offer)
+
+            job_offer += f"\n\nContact method: {i[5]}"
+
+            bot.send_message(chat_id, job_offer)
         return
     text = (message.text).split("/")
     if len(text) > 1:
@@ -271,6 +321,11 @@ def register_new_skill(message):
 
 
 def wait_for_skills(message):
+    """start taking skills from the user
+
+    Args:
+        message (types.Message): information about the user
+    """
     chat_id = message.chat.id
     msg = bot.send_message(
         chat_id,

@@ -1,3 +1,4 @@
+"""commit changes to the database"""
 import psycopg2
 from dotenv import load_dotenv
 import os
@@ -7,6 +8,7 @@ load_dotenv()
 HOST = os.environ["HOST"]
 USER = os.environ["USER"]
 DB_PASSWORD = os.environ["DB_PASSWORD"]
+
 
 def connect_to_db():
     """function to connect to the database
@@ -38,7 +40,7 @@ def insert_directory(dir, table):
     return "INSERT INTO %s (%s) VALUES ( %s )" % (table, columns, placeholders)
 
 
-def save_job_to_db(message,job,requirements):
+def save_job_to_db(username, job, requirements, _):
     """function to save the retrieved job to the database
 
     Args:
@@ -47,13 +49,11 @@ def save_job_to_db(message,job,requirements):
     try:
         conn = connect_to_db()
         cur = conn.cursor()
-        sql = insert_directory(job[message.from_user.username], "jobs")
-        cur.execute(
-            sql + "RETURNING job_id", list(job[message.from_user.username].values())
-        )
+        sql = insert_directory(job[username], "jobs")
+        cur.execute(sql + "RETURNING job_id", list(job[username].values()))
         lst = cur.fetchone()
         lst_id = lst[0]
-        for element in requirements[message.from_user.username]:
+        for element in requirements[username]:
             element["job_id"] = lst_id
             sql = insert_directory(element, "requirements")
             cur.execute(sql, list(element.values()))
@@ -61,6 +61,7 @@ def save_job_to_db(message,job,requirements):
         conn.commit()
     except psycopg2.DatabaseError as error:
         print(error)
+
 
 def create_tables():
     """function to create tables in the database"""
@@ -73,7 +74,8 @@ def create_tables():
             job_title VARCHAR(150),\
             job_format VARCHAR(20),\
             job_type varchar(20),\
-            job_location VARCHAR(150) NULL);"
+            job_location VARCHAR(150) NULL,\
+            contact VARCHAR(150));"
         )
         cur.execute(
             "CREATE TABLE IF NOT EXISTS requirements(\
@@ -87,43 +89,54 @@ def create_tables():
         conn.commit()
     except psycopg2.DatabaseError as error:
         print(error)
-        
-def fetch_jobs(message,filters):
-    skills = filters[message.from_user.username]['skills']
-    elements = [skill['skill_description'] for skill in skills]
+
+
+def fetch_jobs(username, filters, _):
+    skills = filters[username]["skills"]
+    elements = [skill["skill_description"] for skill in skills]
     try:
         conn = connect_to_db()
         cur = conn.cursor()
-        
+
         skills_query = ""
         for skill in elements:
             if len(skills_query) == 0:
-                skills_query += "r.requirement_description LIKE '"+skill+"'"
+                skills_query += "r.requirement_description LIKE '" + skill + "'"
             else:
-                skills_query += " OR r.requirement_description LIKE '"+skill+"'"
-        
-        sql = "SELECT j.job_id,j.job_title,j.job_format,j.job_type,j.job_location FROM jobs j JOIN(\
+                skills_query += " OR r.requirement_description LIKE '" + skill + "'"
+
+        sql = (
+            "SELECT j.job_id,j.job_title,j.job_format,j.job_type,j.job_location,j.contact\
+                FROM jobs j JOIN(\
                 SELECT r.job_id,COUNT(r.job_id) AS matches\
                 FROM requirements r WHERE %s\
-                GROUP BY r.job_id) m ON m.job_id=j.job_id ORDER BY m.matches DESC;" % skills_query
-    
+                GROUP BY r.job_id) m ON m.job_id=j.job_id\
+                WHERE j.job_format='%s' AND j.job_type='%s' ORDER BY m.matches DESC;"
+            % (
+                skills_query,
+                filters[username]["job_format"],
+                filters[username]["job_type"],
+            )
+        )
+
         cur.execute(sql)
-        
+
         ret = cur.fetchall()
         cur.close()
         return ret
     except psycopg2.DatabaseError as error:
         print(error)
-        
-def fetch_requirements(job_id):
+
+
+def fetch_requirements(job_id, _):
     try:
         conn = connect_to_db()
         cur = conn.cursor()
-        
+
         sql = f"SELECT requirement_description, requirement_duration FROM requirements r WHERE r.job_id = {job_id}"
-    
+
         cur.execute(sql)
-        
+
         ret = cur.fetchall()
         cur.close()
         return ret
