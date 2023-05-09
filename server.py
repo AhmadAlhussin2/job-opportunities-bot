@@ -4,7 +4,7 @@ import telebot
 from dotenv import load_dotenv
 import markups
 from database import create_tables, save_job_to_db, fetch_jobs, fetch_requirements
-from constants import JOB_TYPES,JOB_FORMATS
+from constants import JOB_TYPES, JOB_FORMATS
 
 
 load_dotenv()
@@ -25,7 +25,8 @@ def post_job(message):
     """
     bot.send_message(
         message.chat.id,
-        "Thanks for using job opportunities bot\nTo post a new job please answer the following questions:",
+        "Thanks for using job opportunities bot\nTo post a new job please\
+ answer the following questions:",
     )
     JOB[message.from_user.username] = {}
     msg = bot.send_message(message.chat.id, "What is the job title?")
@@ -41,7 +42,8 @@ def find_job(message):
     """
     bot.send_message(
         message.chat.id,
-        "Thanks for using job opportunities bot\nTo find opportunities please answer the following questions:",
+        "Thanks for using job opportunities bot\nTo find opportunities\
+ please answer the following questions:",
     )
     SKILLS[message.from_user.username] = {}
     bot.send_message(
@@ -145,7 +147,9 @@ def register_job_type(message, option):
     bot.send_message(chat_id, f"Okay {option.data} is the type of your job")
     JOB[option.from_user.username]["job_type"] = option.data
     bot.send_message(
-        chat_id, "What is the format of the job?", reply_markup=markups.job_format_markup()
+        chat_id,
+        "What is the format of the job?",
+        reply_markup=markups.job_format_markup(),
     )
 
 
@@ -161,7 +165,8 @@ def register_job_format(message, option):
     if option.data != "remote":
         msg = bot.send_message(
             chat_id,
-            f"Since you chose your job to be {option.data}, please write the location of your office:",
+            f"Since you chose your job to be {option.data}\
+ , please write the location of your office:",
         )
         bot.register_next_step_handler(
             msg,
@@ -177,12 +182,13 @@ def start_taking_skills(chat_id, message):
     """start taking skills from client to find him the best match
 
     Args:
-        chat_id (int): the chat it 
+        chat_id (int): the chat it
         message (types.Message): information about the user
     """
     bot.send_message(
         chat_id,
-        "Now please add some of your skills. You can add them in the format: skill description / years of experience\n\
+        "Now please add some of your skills. You can add them in the format:\
+ skill description / years of experience\n\
 For example, you can write: c++ / 3 to indicate that you have three years of experience in c++",
     )
     SKILLS[message.chat.username]["skills"] = []
@@ -198,8 +204,10 @@ def start_taking_requirements(chat_id, message):
     """
     bot.send_message(
         chat_id,
-        "Finally, please add the requirements of your job in the format: requirement description/years of experience\n \
-For example, you can write: c++ / 3 to indicate that you need a person with three years of experience in c++",
+        "Finally, please add the requirements of your job in the format:\
+ requirement description/years of experience\n \
+For example, you can write: c++ / 3 to indicate \
+that you need a person with three years of experience in c++",
     )
     REQUIREMENTS[message.chat.username] = []
     wait_for_job_requirements(message)

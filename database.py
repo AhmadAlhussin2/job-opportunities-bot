@@ -1,7 +1,7 @@
 """commit changes to the database"""
+import os
 import psycopg2
 from dotenv import load_dotenv
-import os
 
 
 load_dotenv()
@@ -37,7 +37,7 @@ def insert_directory(dirict, table):
     """
     placeholders = ", ".join(["%s"] * len(dirict))
     columns = ", ".join(dirict.keys())
-    return "INSERT INTO %s (%s) VALUES ( %s )" % (table, columns, placeholders)
+    return f"INSERT INTO {table} ({columns}) VALUES ( {placeholders} )"
 
 
 def save_job_to_db(username, job, requirements, _):
@@ -92,6 +92,15 @@ def create_tables():
 
 
 def fetch_jobs(username, filters, _):
+    """function to fetch jobs from the database
+
+    Args:
+        username (string): the sender's username
+        filters (dictionary): filters for the job
+
+    Returns:
+        list: list of jobs that match the client's needs
+    """
     skills = filters[username]["skills"]
     elements = [skill["skill_description"] for skill in skills]
     try:
@@ -105,19 +114,13 @@ def fetch_jobs(username, filters, _):
             else:
                 skills_query += " OR r.requirement_description LIKE '" + skill + "'"
 
-        sql = (
-            "SELECT j.job_id,j.job_title,j.job_format,j.job_type,j.job_location,j.contact\
+        sql = f"SELECT j.job_id,j.job_title,j.job_format,j.job_type,j.job_location,j.contact\
                 FROM jobs j JOIN(\
                 SELECT r.job_id,COUNT(r.job_id) AS matches\
-                FROM requirements r WHERE %s\
+                FROM requirements r WHERE {skills_query}%s\
                 GROUP BY r.job_id) m ON m.job_id=j.job_id\
-                WHERE j.job_format='%s' AND j.job_type='%s' ORDER BY m.matches DESC;"
-            % (
-                skills_query,
-                filters[username]["job_format"],
-                filters[username]["job_type"],
-            )
-        )
+                WHERE j.job_format='{filters[username]['job_format']}'\
+                AND j.job_type='{filters[username]['job_type']}' ORDER BY m.matches DESC;"
 
         cur.execute(sql)
 
@@ -129,13 +132,22 @@ def fetch_jobs(username, filters, _):
 
 
 def fetch_requirements(job_id, _):
+    """fetch requirements from the database
+
+    Args:
+        job_id (integer): job ID that we need to fetch
+
+    Returns:
+        list: requirements list
+    """
     try:
         conn = connect_to_db()
         cur = conn.cursor()
 
-        sql = f"SELECT requirement_description, requirement_duration FROM requirements r WHERE r.job_id = {job_id}"
-
-        cur.execute(sql)
+        cur.execute(
+            f"SELECT requirement_description, requirement_duration\
+                FROM requirements r WHERE r.job_id = {job_id}"
+        )
 
         ret = cur.fetchall()
         cur.close()
