@@ -1,6 +1,5 @@
 """generate general markups for the server"""
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from telebot.types import ReplyKeyboardMarkup
+import telebot
 from constants import JOB_FORMATS, JOB_TYPES
 
 
@@ -10,10 +9,13 @@ def job_type_markup():
     Returns:
         types.Markup: a markup for selecting the jobtype
     """
-    markup = InlineKeyboardMarkup()
+    markup = telebot.types.InlineKeyboardMarkup()
     markup.row_width = 2
     markup.add(
-        *[InlineKeyboardButton(job, callback_data=job.lower()) for job in JOB_TYPES]
+        *[
+            telebot.types.InlineKeyboardButton(job, callback_data=job.lower())
+            for job in JOB_TYPES
+        ]
     )
     return markup
 
@@ -24,9 +26,14 @@ def job_format_markup():
     Returns:
         types.Markup: a markup to choose the job format
     """
-    markup = InlineKeyboardMarkup()
+    markup = telebot.types.InlineKeyboardMarkup()
     markup.row_width = 3
-    markup.add(*[InlineKeyboardButton(job, callback_data=job) for job in JOB_FORMATS])
+    markup.add(
+        *[
+            telebot.types.InlineKeyboardButton(job, callback_data=job)
+            for job in JOB_FORMATS
+        ]
+    )
     return markup
 
 
@@ -36,8 +43,12 @@ def stop_requirments_markup():
     Returns:
         types.Markup: a markup that stop the bot from asking for new requirements
     """
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(InlineKeyboardButton("stop adding requirements", callback_data="stop"))
+    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(
+        telebot.types.InlineKeyboardButton(
+            "stop adding requirements", callback_data="stop"
+        )
+    )
     return markup
 
 
@@ -47,8 +58,10 @@ def stop_skills_markup():
     Returns:
         types.Markup: a markup that stop the bot from asking for new skills
     """
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add(InlineKeyboardButton("stop adding skills", callback_data="stop"))
+    markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(
+        telebot.types.InlineKeyboardButton("stop adding skills", callback_data="stop")
+    )
     return markup
 
 
@@ -58,10 +71,13 @@ def job_find_format_markup():
     Returns:
         types.Markup: a markup to set the job format
     """
-    markup = InlineKeyboardMarkup()
+    markup = telebot.types.InlineKeyboardMarkup()
     markup.row_width = 3
     markup.add(
-        *[InlineKeyboardButton(job, callback_data="find_" + job) for job in JOB_FORMATS]
+        *[
+            telebot.types.InlineKeyboardButton(job, callback_data="find_" + job)
+            for job in JOB_FORMATS
+        ]
     )
     return markup
 
@@ -72,11 +88,11 @@ def job_find_type_markup():
     Returns:
         types.Markup: a markup to set the job type
     """
-    markup = InlineKeyboardMarkup()
+    markup = telebot.types.InlineKeyboardMarkup()
     markup.row_width = 2
     markup.add(
         *[
-            InlineKeyboardButton(job, callback_data="find_" + job.lower())
+            telebot.types.InlineKeyboardButton(job, callback_data="find_" + job.lower())
             for job in JOB_TYPES
         ]
     )
