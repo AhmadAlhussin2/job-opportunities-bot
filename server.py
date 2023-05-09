@@ -1,20 +1,19 @@
-import telebot
+"""main program"""
 import os
+import telebot
 from dotenv import load_dotenv
-from markups import *
+import markups
 from database import create_tables, save_job_to_db, fetch_jobs, fetch_requirements
-from constants import *
-from telebot import types
+from constants import JOB_TYPES,JOB_FORMATS
 
 
 load_dotenv()
 API_KEY = os.environ["API_KEY"]
 
 bot = telebot.TeleBot(API_KEY)
-global job, requirements, skills
-job = {}
-requirements = {}
-skills = {}
+JOB = {}
+REQUIREMENTS = {}
+SKILLS = {}
 
 
 @bot.message_handler(commands=["post_job"])
@@ -28,7 +27,7 @@ def post_job(message):
         message.chat.id,
         "Thanks for using job opportunities bot\nTo post a new job please answer the following questions:",
     )
-    job[message.from_user.username] = {}
+    JOB[message.from_user.username] = {}
     msg = bot.send_message(message.chat.id, "What is the job title?")
     bot.register_next_step_handler(msg, wait_for_job_name)
 
@@ -44,11 +43,11 @@ def find_job(message):
         message.chat.id,
         "Thanks for using job opportunities bot\nTo find opportunities please answer the following questions:",
     )
-    skills[message.from_user.username] = {}
-    msg = bot.send_message(
+    SKILLS[message.from_user.username] = {}
+    bot.send_message(
         message.chat.id,
         "What type of jobs are you interested in?",
-        reply_markup=job_find_type_markup(),
+        reply_markup=markups.job_find_type_markup(),
     )
 
 
@@ -91,9 +90,9 @@ def wait_for_job_name(message):
     chat_id = message.chat.id
     name = message.text
     bot.send_message(chat_id, f"Okay you chose '{name}' to be you job's name")
-    job[message.from_user.username]["job_title"] = name
+    JOB[message.from_user.username]["job_title"] = name
     bot.send_message(
-        chat_id, "What is the type of your job?", reply_markup=job_type_markup()
+        chat_id, "What is the type of your job?", reply_markup=markups.job_type_markup()
     )
 
 
@@ -105,12 +104,12 @@ def add_job_type_filter(message, option):
         option (types.Message): response from the user about the job type
     """
     chat_id = message.chat.id
-    skills[option.from_user.username]["job_type"] = option.data[5:]
+    SKILLS[option.from_user.username]["job_type"] = option.data[5:]
     bot.edit_message_text(
         chat_id=chat_id,
         message_id=message.message_id,
         text="Okay, and what is your preferable format?",
-        reply_markup=job_find_format_markup(),
+        reply_markup=markups.job_find_format_markup(),
     )
 
 
@@ -122,13 +121,13 @@ def add_job_format_filter(message, option):
         option (types.Message): information abouth the usrer's choice about job format
     """
     chat_id = message.chat.id
-    skills[option.from_user.username]["job_format"] = option.data[5:]
+    SKILLS[option.from_user.username]["job_format"] = option.data[5:]
     if option.data != "find_remote":
         msg = bot.send_message(chat_id, "Okay, then please send your location")
         bot.register_next_step_handler(
             msg,
             lambda msg: take_job_location(
-                msg, start_taking_skills, skills[option.from_user.username]
+                msg, start_taking_skills, SKILLS[option.from_user.username]
             ),
         )
     else:
@@ -144,9 +143,9 @@ def register_job_type(message, option):
     """
     chat_id = message.chat.id
     bot.send_message(chat_id, f"Okay {option.data} is the type of your job")
-    job[option.from_user.username]["job_type"] = option.data
+    JOB[option.from_user.username]["job_type"] = option.data
     bot.send_message(
-        chat_id, "What is the format of the job?", reply_markup=job_format_markup()
+        chat_id, "What is the format of the job?", reply_markup=markups.job_format_markup()
     )
 
 
@@ -157,7 +156,7 @@ def register_job_format(message, option):
         message (types.Message): information about the user
         option (string): the option chosen by the user
     """
-    job[option.from_user.username]["job_format"] = option.data
+    JOB[option.from_user.username]["job_format"] = option.data
     chat_id = message.chat.id
     if option.data != "remote":
         msg = bot.send_message(
@@ -167,7 +166,7 @@ def register_job_format(message, option):
         bot.register_next_step_handler(
             msg,
             lambda msg: take_job_location(
-                msg, start_taking_requirements, job[option.from_user.username]
+                msg, start_taking_requirements, JOB[option.from_user.username]
             ),
         )
     else:
@@ -186,7 +185,7 @@ def start_taking_skills(chat_id, message):
         "Now please add some of your skills. You can add them in the format: skill description / years of experience\n\
 For example, you can write: c++ / 3 to indicate that you have three years of experience in c++",
     )
-    skills[message.chat.username]["skills"] = []
+    SKILLS[message.chat.username]["skills"] = []
     wait_for_skills(message)
 
 
@@ -199,10 +198,10 @@ def start_taking_requirements(chat_id, message):
     """
     bot.send_message(
         chat_id,
-        f"Finally, please add the requirements of your job in the format: requirement description/years of experience\n \
+        "Finally, please add the requirements of your job in the format: requirement description/years of experience\n \
 For example, you can write: c++ / 3 to indicate that you need a person with three years of experience in c++",
     )
-    requirements[message.chat.username] = []
+    REQUIREMENTS[message.chat.username] = []
     wait_for_job_requirements(message)
 
 
@@ -212,8 +211,8 @@ def take_contact_method(message):
     Args:
         message (types.Message): message info
     """
-    job[message.from_user.username]["contact"] = message.text
-    save_job_to_db(message.from_user.username, job, requirements, message.chat.id)
+    JOB[message.from_user.username]["contact"] = message.text
+    save_job_to_db(message.from_user.username, JOB, REQUIREMENTS, message.chat.id)
 
 
 def register_new_requirement(message):
@@ -227,7 +226,7 @@ def register_new_requirement(message):
         bot.send_message(
             chat_id,
             "okay got the requirements",
-            reply_markup=types.ReplyKeyboardRemove(),
+            reply_markup=telebot.types.ReplyKeyboardRemove(),
         )
         msg = bot.send_message(chat_id, "Please send a contact method:")
         bot.register_next_step_handler(msg, take_contact_method)
@@ -243,7 +242,7 @@ def register_new_requirement(message):
     elif not text[1].isnumeric():
         bot.send_message(chat_id, "Please add the years of experience as a number")
     else:
-        requirements[message.chat.username].append(
+        REQUIREMENTS[message.chat.username].append(
             {"requirement_description": text[0], "requirement_duration": text[1]}
         )
     wait_for_job_requirements(message)
@@ -259,7 +258,7 @@ def wait_for_job_requirements(message):
     msg = bot.send_message(
         chat_id,
         "Add a requirment for your job:",
-        reply_markup=stop_requirments_markup(),
+        reply_markup=markups.stop_requirments_markup(),
     )
     bot.register_next_step_handler(msg, register_new_requirement)
 
@@ -275,9 +274,9 @@ def register_new_skill(message):
         bot.send_message(
             chat_id,
             "okay got the skills",
-            reply_markup=types.ReplyKeyboardRemove(),
+            reply_markup=telebot.types.ReplyKeyboardRemove(),
         )
-        jobs = fetch_jobs(message.from_user.username, skills, message.chat.id)
+        jobs = fetch_jobs(message.from_user.username, SKILLS, message.chat.id)
         for i in jobs:
             job_offer = i[1] + "\n"
             job_offer += i[2]
@@ -314,7 +313,7 @@ def register_new_skill(message):
     elif not text[1].isnumeric():
         bot.send_message(chat_id, "Please add the years of experience as a number")
     else:
-        skills[message.chat.username]["skills"].append(
+        SKILLS[message.chat.username]["skills"].append(
             {"skill_description": text[0], "skill_duration": text[1]}
         )
     wait_for_skills(message)
@@ -330,7 +329,7 @@ def wait_for_skills(message):
     msg = bot.send_message(
         chat_id,
         "Add a skill:",
-        reply_markup=stop_skills_markup(),
+        reply_markup=markups.stop_skills_markup(),
     )
     bot.register_next_step_handler(msg, register_new_skill)
 

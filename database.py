@@ -25,18 +25,18 @@ def connect_to_db():
         print(error)
 
 
-def insert_directory(dir, table):
+def insert_directory(dirict, table):
     """helper function to insert a dictionary to the table
 
     Args:
-        dir (dictionary): a dictionary to be inserted in the database
+        dirict (dictionary): a dictionary to be inserted in the database
         table (string): a table where the dictionary will be inserted
 
     Returns:
         string: SQL command to excute it on a connection
     """
-    placeholders = ", ".join(["%s"] * len(dir))
-    columns = ", ".join(dir.keys())
+    placeholders = ", ".join(["%s"] * len(dirict))
+    columns = ", ".join(dirict.keys())
     return "INSERT INTO %s (%s) VALUES ( %s )" % (table, columns, placeholders)
 
 

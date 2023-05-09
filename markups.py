@@ -1,7 +1,7 @@
 """generate general markups for the server"""
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from telebot.types import ReplyKeyboardMarkup
-from constants import *
+from constants import JOB_FORMATS,JOB_TYPES
 
 
 def job_type_markup():

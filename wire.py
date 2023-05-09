@@ -1,14 +1,14 @@
 """sends data to the middle server"""
 import json
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
 
 load_dotenv()
 WIRE_URL = os.environ["WIRE_URL"]
 
 
-def send_data(payload):
-    # TODO: send payload to the second server
+def send_data(_):
+    # send payload to the second server
     pass
 
 
