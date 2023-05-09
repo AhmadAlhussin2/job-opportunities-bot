@@ -1,3 +1,5 @@
+[![Linter](https://github.com/AhmadAlhussin2/job-opportunities-bot/actions/workflows/pylint.yml/badge.svg)](https://github.com/AhmadAlhussin2/job-opportunities-bot/actions/workflows/pylint.yml)
+
 # Job opportunities bot
 
 ## Usage
