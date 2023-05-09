@@ -62,7 +62,6 @@ def save_job_to_db(username, job, requirements, _):
         conn.commit()
     except psycopg2.DatabaseError as error:
         print(error)
-        return error
 
 
 def create_tables():
@@ -91,7 +90,6 @@ def create_tables():
         conn.commit()
     except psycopg2.DatabaseError as error:
         print(error)
-        return error
 
 
 def fetch_jobs(username, filters, _):
