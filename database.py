@@ -23,6 +23,7 @@ def connect_to_db():
         return conn
     except psycopg2.DatabaseError as error:
         print(error)
+        return error
 
 
 def insert_directory(dirict, table):
@@ -61,6 +62,7 @@ def save_job_to_db(username, job, requirements, _):
         conn.commit()
     except psycopg2.DatabaseError as error:
         print(error)
+        return error
 
 
 def create_tables():
@@ -89,6 +91,7 @@ def create_tables():
         conn.commit()
     except psycopg2.DatabaseError as error:
         print(error)
+        return error
 
 
 def fetch_jobs(username, filters, _):
@@ -129,6 +132,7 @@ def fetch_jobs(username, filters, _):
         return ret
     except psycopg2.DatabaseError as error:
         print(error)
+        return error
 
 
 def fetch_requirements(job_id, _):
@@ -154,3 +158,4 @@ def fetch_requirements(job_id, _):
         return ret
     except psycopg2.DatabaseError as error:
         print(error)
+        return error
