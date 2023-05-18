@@ -1,0 +1,41 @@
+version: '3'
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile-server
+    container_name: server
+    network_mode: host
+    depends_on: [ nginx, database1, database2, database3 ]
+    command: sh -c 'python3 server.py'
+  database1:
+    build:
+      context: .
+      dockerfile: Dockerfile-database
+    container_name: database1
+    network_mode: host
+    depends_on: [ nginx ]
+    command: sh -c 'python3 database.py 5001'
+  database2:
+    build:
+      context: .
+      dockerfile: Dockerfile-database
+    container_name: database2
+    depends_on: [ nginx ]
+    network_mode: host
+    command: sh -c 'python3 database.py 5002'
+  database3:
+    build:
+      context: .
+      dockerfile: Dockerfile-database
+    container_name: database3
+    network_mode: host
+    depends_on: [ nginx ]
+    command: sh -c 'python3 database.py 5003'
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile-nginx
+    container_name: nginx
+    network_mode: host
