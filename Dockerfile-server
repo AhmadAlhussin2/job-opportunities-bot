@@ -1,0 +1,10 @@
+# Dockerfile for the server container
+FROM python:3.9-slim
+WORKDIR /app
+COPY requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+COPY server.py server.py
+COPY .env .env
+COPY wire.py wire.py
+COPY markups.py markups.py
+COPY constants.py constants.py

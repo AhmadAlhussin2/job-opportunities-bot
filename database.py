@@ -1,6 +1,7 @@
 """commit changes to the database"""
 import os
 import json
+import argparse
 import psycopg2
 from dotenv import load_dotenv
 from flask import Flask, request
@@ -200,4 +201,10 @@ def handle_post_request():
     return 'OK'
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5003)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("port_number", type=str)
+    args_cmd = parser.parse_args()
+        
+    server_port = args_cmd.port_number
+    server_port = int(server_port)
+    app.run(debug=True, port=server_port)
