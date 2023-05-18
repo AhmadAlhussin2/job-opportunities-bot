@@ -204,7 +204,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("port_number", type=str)
     args_cmd = parser.parse_args()
-        
     server_port = args_cmd.port_number
     server_port = int(server_port)
     app.run(debug=True, port=server_port)
