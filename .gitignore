@@ -3,3 +3,6 @@
 test.py
 /__pycache__
 .vscode
+session*
+*/__pycache__
+.pytest_cache

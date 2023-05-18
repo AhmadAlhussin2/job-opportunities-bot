@@ -20,7 +20,8 @@ def _connect_to_db():
             host=os.environ["HOST"],
             database=os.environ["DB_NAME"],
             user=os.environ["DB_USER"],
-            password=os.environ["DB_PASSWORD"]
+            password=os.environ["DB_PASSWORD"],
+            port=os.environ["PORT"]
         )
         return conn
     except psycopg2.DatabaseError as error:
