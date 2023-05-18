@@ -3,7 +3,7 @@ import os
 import telebot
 from dotenv import load_dotenv
 import markups
-from database import create_tables, save_job_to_db, fetch_jobs, fetch_requirements
+from wire import create_tables, save_job_to_db, fetch_jobs
 from constants import JOB_TYPES, JOB_FORMATS
 
 
@@ -284,31 +284,7 @@ def register_new_skill(message):
             "okay got the skills",
             reply_markup=telebot.types.ReplyKeyboardRemove(),
         )
-        jobs = fetch_jobs(message.from_user.username, SKILLS, message.chat.id)
-        for i in jobs:
-            job_offer = i[1] + "\n"
-            job_offer += i[2]
-            if i[2] != "remote":
-                job_offer += f" ({i[4]})"
-            job_offer += "\n\n"
-            job_offer += "About the job\n"
-            job_offer += f"Job title: {i[1]}\n"
-            job_offer += f"Job type: {i[3]}\n"
-            job_offer += f"Job format: {i[2]}"
-            if i[2] != "remote":
-                job_offer += f" ({i[4]})"
-            job_offer += "\n\n"
-            job_offer += "Requirements:"
-            requirement_list = fetch_requirements(i[0], message.chat.id)
-            print(requirement_list)
-            for j in requirement_list:
-                job_offer += f"\n- {j[0]} / {j[1]} year"
-                if j[1] != 1:
-                    job_offer += "s"
-
-            job_offer += f"\n\nContact method: {i[5]}"
-
-            bot.send_message(chat_id, job_offer)
+        fetch_jobs(message.from_user.username, SKILLS, message.chat.id)
         return
     text = (message.text).split("/")
     if len(text) > 1:

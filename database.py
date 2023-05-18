@@ -1,16 +1,15 @@
 """commit changes to the database"""
 import os
+import json
 import psycopg2
 from dotenv import load_dotenv
-
+from flask import Flask, request
+import telebot
 
 load_dotenv()
-HOST = os.environ["HOST"]
-USER = os.environ["DB_USER"]
-DB_PASSWORD = os.environ["DB_PASSWORD"]
+bot = telebot.TeleBot(os.environ["API_KEY"])
 
-
-def connect_to_db():
+def _connect_to_db():
     """function to connect to the database
 
     Returns:
@@ -18,7 +17,10 @@ def connect_to_db():
     """
     try:
         conn = psycopg2.connect(
-            host=HOST, database="telegram-bot", user=USER, password=DB_PASSWORD
+            host=os.environ["HOST"],
+            database="telegram-bot",
+            user=os.environ["DB_USER"],
+            password=os.environ["DB_PASSWORD"]
         )
         return conn
     except psycopg2.DatabaseError as error:
@@ -26,7 +28,7 @@ def connect_to_db():
         return error
 
 
-def insert_directory(dirict, table):
+def _insert_directory(dirict, table):
     """helper function to insert a dictionary to the table
 
     Args:
@@ -41,33 +43,34 @@ def insert_directory(dirict, table):
     return f"INSERT INTO {table} ({columns}) VALUES ( {placeholders} )"
 
 
-def save_job_to_db(username, job, requirements, _):
+def save_job_to_db(username, job, requirements, chat_id):
     """function to save the retrieved job to the database
 
     Args:
         message (types.Message): information about the sender
     """
     try:
-        conn = connect_to_db()
+        conn = _connect_to_db()
         cur = conn.cursor()
-        sql = insert_directory(job[username], "jobs")
+        sql = _insert_directory(job[username], "jobs")
         cur.execute(sql + "RETURNING job_id", list(job[username].values()))
         lst = cur.fetchone()
         lst_id = lst[0]
         for element in requirements[username]:
             element["job_id"] = lst_id
-            sql = insert_directory(element, "requirements")
+            sql = _insert_directory(element, "requirements")
             cur.execute(sql, list(element.values()))
         cur.close()
         conn.commit()
     except psycopg2.DatabaseError as error:
         print(error)
+    bot.send_message(chat_id,"Okay we got your job description")
 
 
 def create_tables():
     """function to create tables in the database"""
     try:
-        conn = connect_to_db()
+        conn = _connect_to_db()
         cur = conn.cursor()
         cur.execute(
             "CREATE TABLE IF NOT EXISTS jobs(\
@@ -92,7 +95,7 @@ def create_tables():
         print(error)
 
 
-def fetch_jobs(username, filters, _):
+def fetch_jobs(username, filters, chat_id):
     """function to fetch jobs from the database
 
     Args:
@@ -102,10 +105,9 @@ def fetch_jobs(username, filters, _):
     Returns:
         list: list of jobs that match the client's needs
     """
-    skills = filters[username]["skills"]
-    elements = [skill["skill_description"] for skill in skills]
+    elements = [skill["skill_description"] for skill in filters[username]["skills"]]
     try:
-        conn = connect_to_db()
+        conn = _connect_to_db()
         cur = conn.cursor()
 
         skills_query = ""
@@ -125,15 +127,36 @@ def fetch_jobs(username, filters, _):
 
         cur.execute(sql)
 
-        ret = cur.fetchall()
+        jobs = cur.fetchall()
         cur.close()
-        return ret
+        for i in jobs:
+            job_offer = i[1] + "\n"
+            job_offer += i[2]
+            if i[2] != "remote":
+                job_offer += f" ({i[4]})"
+            job_offer += "\n\n"
+            job_offer += "About the job\n"
+            job_offer += f"Job title: {i[1]}\n"
+            job_offer += f"Job type: {i[3]}\n"
+            job_offer += f"Job format: {i[2]}"
+            if i[2] != "remote":
+                job_offer += f" ({i[4]})"
+            job_offer += "\n\n"
+            job_offer += "Requirements:"
+            requirement_list = _fetch_requirements(i[0], chat_id)
+            for j in requirement_list:
+                job_offer += f"\n- {j[0]} / {j[1]} year"
+                if j[1] != 1:
+                    job_offer += "s"
+
+            job_offer += f"\n\nContact method: {i[5]}"
+
+            bot.send_message(chat_id, job_offer)
     except psycopg2.DatabaseError as error:
         print(error)
-        return error
 
 
-def fetch_requirements(job_id, _):
+def _fetch_requirements(job_id, _):
     """fetch requirements from the database
 
     Args:
@@ -143,7 +166,7 @@ def fetch_requirements(job_id, _):
         list: requirements list
     """
     try:
-        conn = connect_to_db()
+        conn = _connect_to_db()
         cur = conn.cursor()
 
         cur.execute(
@@ -157,3 +180,23 @@ def fetch_requirements(job_id, _):
     except psycopg2.DatabaseError as error:
         print(error)
         return error
+
+app = Flask(__name__)
+
+@app.route('/', methods=['POST'])
+def handle_post_request():
+    """function to handle database queries
+
+    Returns:
+        response: okay response if everythong went as planned
+    """
+    data = request.data
+    req = json.loads(data.decode())
+    req = json.loads(req)
+    func_name = req['function_name']
+    args = req['args']
+    globals()[func_name](*args)
+    return 'OK'
+
+if __name__ == '__main__':
+    app.run(port=5003)

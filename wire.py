@@ -12,7 +12,7 @@ def send_data(data):
     """Funciton to send data to the middle server
 
     Args:
-        _ (string): payload to be sent
+        data (string): payload to be sent
     """
     requests.post(WIRE_URL,json=data,timeout=5)
 
@@ -53,15 +53,4 @@ def fetch_jobs(username, filters, chat_id):
         "args": [username, filters, chat_id],
         "chat_id": chat_id,
     }
-    send_data(json.dumps(payload))
-
-
-def fetch_requirements(job_id, chat_id):
-    """function to fetch the requirements of a specific job
-
-    Args:
-        job_id (integer): a unique identifier for the job
-        chat_id (integer): the chat ID of the sender
-    """
-    payload = {"function_name": "job_id", "args": [job_id, chat_id], "chat_id": chat_id}
     send_data(json.dumps(payload))
