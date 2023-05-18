@@ -18,7 +18,7 @@ def _connect_to_db():
     try:
         conn = psycopg2.connect(
             host=os.environ["HOST"],
-            database="telegram-bot",
+            database=os.environ["DB_NAME"],
             user=os.environ["DB_USER"],
             password=os.environ["DB_PASSWORD"]
         )
@@ -199,4 +199,4 @@ def handle_post_request():
     return 'OK'
 
 if __name__ == '__main__':
-    app.run(port=5003)
+    app.run(debug=True, port=5003)
