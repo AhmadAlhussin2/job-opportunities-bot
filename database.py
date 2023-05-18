@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 HOST = os.environ["HOST"]
-USER = os.environ["USER"]
+USER = os.environ["DB_USER"]
 DB_PASSWORD = os.environ["DB_PASSWORD"]
 
 
@@ -118,7 +118,7 @@ def fetch_jobs(username, filters, _):
         sql = f"SELECT j.job_id,j.job_title,j.job_format,j.job_type,j.job_location,j.contact\
                 FROM jobs j JOIN(\
                 SELECT r.job_id,COUNT(r.job_id) AS matches\
-                FROM requirements r WHERE {skills_query}%s\
+                FROM requirements r WHERE {skills_query}\
                 GROUP BY r.job_id) m ON m.job_id=j.job_id\
                 WHERE j.job_format='{filters[username]['job_format']}'\
                 AND j.job_type='{filters[username]['job_type']}' ORDER BY m.matches DESC;"

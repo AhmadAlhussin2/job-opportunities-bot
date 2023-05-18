@@ -2,19 +2,19 @@
 import json
 import os
 from dotenv import load_dotenv
+import requests
 
 load_dotenv()
 WIRE_URL = os.environ["WIRE_URL"]
 
 
-def send_data(_):
+def send_data(data):
     """Funciton to send data to the middle server
 
     Args:
         _ (string): payload to be sent
     """
-    # send payload to the second server
-    return
+    requests.post(WIRE_URL,json=data,timeout=5)
 
 
 def save_job_to_db(username, job, requirements, chat_id):
