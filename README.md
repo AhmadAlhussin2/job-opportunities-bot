@@ -28,17 +28,21 @@
 
     Essentially, the Nginx server routes incoming requests to three distinct database managers, each performing post and retrieve operations within the same database.
 
+- ### Docker
+
+    The solution employs three Docker images: one for Nginx, one for the database manager, and one for the server. 
+    
+    Each image contains all the necessary dependencies for the respective files, ensuring portability and ease of deployment.
+
 - ### Database managers
 
     The database managers patiently await incoming requests.
 
     Upon receiving a client's request, they execute the corresponding database operations and directly transmit the results to the client. This approach enhances the server's processing speed since it no longer needs to wait for the results before sending them to clients.
 
-- ### Docker
+    Database showcase:
 
-    The solution employs three Docker images: one for Nginx, one for the database manager, and one for the server. 
-    
-    Each image contains all the necessary dependencies for the respective files, ensuring portability and ease of deployment.
+    ![](./static/DB_diagram.png)
      
 
 ## Usage
