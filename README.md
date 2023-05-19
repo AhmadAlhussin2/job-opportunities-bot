@@ -8,22 +8,25 @@
 
 - ### Main server
 
-The server is implemented where it should patiently wait for clients to complete their requests.
-For instance, if a client intends to post a job, the server collects essential details such as job title, format, type, and requirements. Subsequently, it forwards this request block to Nginx .
-The server's sole responsibility lies in forwarding client requests to Nginx; it does not directly send any results to clients. Consequently, it can efficiently process a high volume of requests, and the database manager will transmit the results to clients once they are ready.
+    The server is implemented where it should patiently wait for clients to complete their requests.
+
+    For instance, if a client intends to post a job, the server collects essential details such as job title, format, type, and requirements. Subsequently, it  forwards this request block to Nginx .
+
+    The server's sole responsibility lies in forwarding client requests to Nginx; it does not directly send any results to clients. Consequently, it can efficiently process a high volume of requests, and the database manager will transmit the results to clients once they are ready.
 
 - ### wire
 
-    This python script is create to forward requests from the main server to the nginx server. 
+    A Python script is implemented to relay requests from the main server to the Nginx server.
 
-    The functionality of this script is close to RPC (Remote Procedure Call). Basically, it takes the database requests and telegram chat ID and forwards it to the nginx server. 
+    The functionality of this script resembles a Remote Procedure Call (RPC), as it receives database requests and Telegram chat IDs, forwarding them to the Nginx server.
 
 - ### nginx server
 
-    We decided to make a proxy passer and load balancer with nginx because database operations are much more expensive than waiting for new messages. 
-    
-    We used nginx official image and with customized nginx configuration file __nginx.conf__.
-    Basically, the nginx server forward the incoming requests to three different database managers. Nevertheless, all the managers do post and retrieve operations in the same database.
+    To optimize performance, an Nginx server is implemented as a proxy passer and load balancer. This configuration is particularly effective since database operations are significantly more resource-intensive than waiting for new messages.
+
+    The official Nginx image is utilized, along with a customized nginx.conf configuration file. 
+
+    Essentially, the Nginx server routes incoming requests to three distinct database managers, each performing post and retrieve operations within the same database.
 
 - ### database managers
 
