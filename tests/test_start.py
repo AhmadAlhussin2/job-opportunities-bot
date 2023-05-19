@@ -41,8 +41,9 @@ async def _click_type():
 
 async def _send_skills():
     lst_msg = await client.get_messages('@jobs_for_you_bot', limit=1)
-    timeout = time.time() + 5
+    timeout = time.time() + 7
     await client.send_message("@jobs_for_you_bot","c++ / 3")
+    time.sleep(1)
     await lst_msg[0].click(0)
     while True:
         new_msg = await client.get_messages('@jobs_for_you_bot', limit=1)

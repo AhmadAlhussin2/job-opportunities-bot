@@ -86,3 +86,19 @@ To run the tests some more variables need to be set in `.env` file. Those variab
 
 - __API_ID :__ it can be found in telegram [apps](https://my.telegram.org/apps)
 - __API_HASH :__ it also needed to log in to an account and test the bot. It can also be found in telegram [apps](https://my.telegram.org/apps)
+
+Then, to start the testing we need to use:
+
+```properties
+pytest ./tests -s
+``` 
+
+This command will forward you to log in to your telegram account then send messages to the bot automatically.
+
+The following results occured when running this command:
+
+![](./static/testing_command.png)
+
+And, the script will automatically send the following messages (from my account since I logged in with my number)
+
+![](static/testing_sample.png)
