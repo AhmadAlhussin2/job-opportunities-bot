@@ -18,10 +18,10 @@ SKILLS = {}
 
 @bot.message_handler(commands=["post_job"])
 def post_job(message):
-    """post job function to handle recieveing job details and adding them to the databse
+    """post job function to recieve job details and adding them to databse
 
     Args:
-        message (types.Message): a command to initiate the process (post_job for now)
+        message (types.Message): a command to initiate the process
     """
     bot.send_message(
         message.chat.id,
@@ -94,7 +94,8 @@ def wait_for_job_name(message):
     bot.send_message(chat_id, f"Okay you chose '{name}' to be you job's name")
     JOB[message.from_user.username]["job_title"] = name
     bot.send_message(
-        chat_id, "What is the type of your job?", reply_markup=markups.job_type_markup()
+        chat_id, "What is the type of your job?",
+        reply_markup=markups.job_type_markup()
     )
 
 
@@ -120,7 +121,7 @@ def add_job_format_filter(message, option):
 
     Args:
         message (types.Message): infromation about the user
-        option (types.Message): information abouth the usrer's choice about job format
+        option (types.Message): information abouth the usre's choice about job
     """
     chat_id = message.chat.id
     SKILLS[option.from_user.username]["job_format"] = option.data[5:]
@@ -189,14 +190,15 @@ def start_taking_skills(chat_id, message):
         chat_id,
         "Now please add some of your skills. You can add them in the format:\
  skill description / years of experience\n\
-For example, you can write: c++ / 3 to indicate that you have three years of experience in c++",
+For example, you can write: c++ / 3 to indicate\
+that you have three years of experience in c++",
     )
     SKILLS[message.chat.username]["skills"] = []
     wait_for_skills(message)
 
 
 def start_taking_requirements(chat_id, message):
-    """Take the requirements from the user to include them as prerequests for joining the job
+    """Take the requirements to include them as prerequests for joining
 
     Args:
         chat_id (int): chat ID where the messages will be sent
@@ -220,7 +222,12 @@ def take_contact_method(message):
         message (types.Message): message info
     """
     JOB[message.from_user.username]["contact"] = message.text
-    save_job_to_db(message.from_user.username, JOB, REQUIREMENTS, message.chat.id)
+    save_job_to_db(
+        message.from_user.username,
+        JOB,
+        REQUIREMENTS,
+        message.chat.id
+    )
 
 
 def register_new_requirement(message):
@@ -245,13 +252,20 @@ def register_new_requirement(message):
     if len(text) != 2:
         bot.send_message(
             chat_id,
-            "Please make sure you use the format: requirement / years of experience",
+            "Please make sure you use the format:\
+requirement / years of experience",
         )
     elif not text[1].isnumeric():
-        bot.send_message(chat_id, "Please add the years of experience as a number")
+        bot.send_message(
+            chat_id,
+            "Please add the years of experience as a number"
+        )
     else:
         REQUIREMENTS[message.chat.username].append(
-            {"requirement_description": text[0], "requirement_duration": text[1]}
+            {
+                "requirement_description": text[0],
+                "requirement_duration": text[1]
+            }
         )
     wait_for_job_requirements(message)
 
@@ -295,7 +309,10 @@ def register_new_skill(message):
             "Please make sure you use the format: skill / years of experience",
         )
     elif not text[1].isnumeric():
-        bot.send_message(chat_id, "Please add the years of experience as a number")
+        bot.send_message(
+            chat_id,
+            "Please add the years of experience as a number"
+        )
     else:
         SKILLS[message.chat.username]["skills"].append(
             {"skill_description": text[0], "skill_duration": text[1]}

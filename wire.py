@@ -14,7 +14,7 @@ def send_data(data):
     Args:
         data (string): payload to be sent
     """
-    requests.post(WIRE_URL,json=data,timeout=5)
+    requests.post(WIRE_URL, json=data, timeout=5)
 
 
 def save_job_to_db(username, job, requirements, chat_id):

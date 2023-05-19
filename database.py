@@ -10,6 +10,7 @@ import telebot
 load_dotenv()
 bot = telebot.TeleBot(os.environ["API_KEY"])
 
+
 def _connect_to_db():
     """function to connect to the database
 
@@ -66,7 +67,7 @@ def save_job_to_db(username, job, requirements, chat_id):
         conn.commit()
     except psycopg2.DatabaseError as error:
         print(error)
-    bot.send_message(chat_id,"Okay we got your job description")
+    bot.send_message(chat_id, "Okay we got your job description")
 
 
 def create_tables():
@@ -107,7 +108,8 @@ def fetch_jobs(username, filters, chat_id):
     Returns:
         list: list of jobs that match the client's needs
     """
-    elements = [skill["skill_description"] for skill in filters[username]["skills"]]
+    elements = [skill["skill_description"]
+                for skill in filters[username]["skills"]]
     try:
         conn = _connect_to_db()
         cur = conn.cursor()
@@ -115,17 +117,20 @@ def fetch_jobs(username, filters, chat_id):
         skills_query = ""
         for skill in elements:
             if len(skills_query) == 0:
-                skills_query += "r.requirement_description LIKE '" + skill + "'"
+                skills_query += "r.requirement_description LIKE '"+skill+"'"
             else:
-                skills_query += " OR r.requirement_description LIKE '" + skill + "'"
+                skills_query += " OR r.requirement_description LIKE '"
+                skills_query += skill + "'"
 
-        sql = f"SELECT j.job_id,j.job_title,j.job_format,j.job_type,j.job_location,j.contact\
+        sql = f"SELECT j.job_id,j.job_title,j.job_format,j.job_type,\
+                j.job_location,j.contact\
                 FROM jobs j JOIN(\
                 SELECT r.job_id,COUNT(r.job_id) AS matches\
                 FROM requirements r WHERE {skills_query}\
                 GROUP BY r.job_id) m ON m.job_id=j.job_id\
                 WHERE j.job_format='{filters[username]['job_format']}'\
-                AND j.job_type='{filters[username]['job_type']}' ORDER BY m.matches DESC;"
+                AND j.job_type='{filters[username]['job_type']}'\
+                ORDER BY m.matches DESC;"
 
         cur.execute(sql)
 
@@ -183,7 +188,9 @@ def _fetch_requirements(job_id, _):
         print(error)
         return error
 
+
 app = Flask(__name__)
+
 
 @app.route('/', methods=['POST'])
 def handle_post_request():
@@ -199,6 +206,7 @@ def handle_post_request():
     args = req['args']
     globals()[func_name](*args)
     return 'OK'
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
