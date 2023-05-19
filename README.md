@@ -6,13 +6,11 @@
 
 ![](./static/server-setup.gif)
 
-- ### main server
+- ### Main server
 
-    The main server _labeled in green in the diagram above_ is responsible for recieving clients requests from telegram. We decided to create this server because it is not possible to retrieve the telegram messages from multiple servers _limitation from telegram_. 
-
-    The server in general is responsible for waiting clients to complete their request. For example, if a client wanted to send a request for posting a job, the server will take the job title, format, type, and requirements. Then, the server will forward this request block to __nginx__.
-
-    The server is only responsilbe for fowarding client requests to nginx. Specifically, It does not send any results to clients. Therefore, it can process a large number of requests and the database manager will send the results to the clients whenever it's ready.
+The server is implemented where it should patiently wait for clients to complete their requests.
+For instance, if a client intends to post a job, the server collects essential details such as job title, format, type, and requirements. Subsequently, it forwards this request block to Nginx .
+The server's sole responsibility lies in forwarding client requests to Nginx; it does not directly send any results to clients. Consequently, it can efficiently process a high volume of requests, and the database manager will transmit the results to clients once they are ready.
 
 - ### wire
 
