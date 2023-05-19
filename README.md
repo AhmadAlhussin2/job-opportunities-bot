@@ -6,27 +6,44 @@
 
 ![](./static/server-setup.gif)
 
-- ### main server
+- ### Main server
 
-    The main server _labeled in green in the diagram bellow_ is responsible for recieving clients requests from telegram. We decided to create this server because it is not possible to retrieve the telegram messages from multiple servers _limitation from telegram_. 
+    The server is implemented where it should patiently wait for clients to complete their requests.
 
-    The server in general is responsible for waiting clients to complete their request. For example, if a client wanted to send a request for posting a job, the server will take the job title, format, type, and requirements. Then, the server will forward this request block to __nginx__ server. 
+    For instance, if a client intends to post a job, the server collects essential details such as job title, format, type, and requirements. Subsequently, it  forwards this request block to Nginx .
+
+    The server's sole responsibility lies in forwarding client requests to Nginx; it does not directly send any results to clients. Consequently, it can efficiently process a high volume of requests, and the database manager will transmit the results to clients once they are ready.
 
 - ### wire
 
-    This python script is create to forward requests from the main server to the nginx server. 
+    This script is implemented to relay requests from the main server to the Nginx server.
 
-    The functionality of this script is close to RPC (Remote Procedure Call). Basically, it takes the database requests and telegram chat ID and forwards it to the nginx server. 
+    The functionality of this script resembles a Remote Procedure Call (RPC), as it receives database requests and Telegram chat IDs, forwarding them to the Nginx server.
 
-- ### nginx server
+- ### Nginx server
 
-    We decided to make a load balancer with nginx because database operations are much more expensive than waiting for new messages. 
+    To optimize performance, an Nginx server is implemented as a proxy passer and load balancer. This configuration is particularly effective since database operations are significantly more resource-intensive than waiting for new messages.
 
-    Basically, the nginx server forward the incoming requests to three different database managers. Nevertheless, all the managers store data in the same database.
+    The official Nginx image is utilized, along with a customized nginx.conf configuration file. 
 
-- ### database managers
+    Essentially, the Nginx server routes incoming requests to three distinct database managers, each performing post and retrieve operations within the same database.
 
-    Perform the database requests from clients, and send the result of those requests to the client
+- ### Docker
+
+    The solution employs three Docker images: one for Nginx, one for the database manager, and one for the server. 
+    
+    Each image contains all the necessary dependencies for the respective files, ensuring portability and ease of deployment.
+
+- ### Database managers
+
+    The database managers patiently await incoming requests.
+
+    Upon receiving a client's request, they execute the corresponding database operations and directly transmit the results to the client. This approach enhances the server's processing speed since it no longer needs to wait for the results before sending them to clients.
+
+    Database showcase:
+
+    ![](./static/DB_diagram.png)
+     
 
 ## Usage
 
@@ -36,7 +53,7 @@ So, to run the project locally you need:
 
 - postgres database
 
-    You need to specifit the following in `.env` file:
+    You need to specify the following in `.env` file:
 
     - __HOST :__ where the database is hosted
     - __PORT :__ port number for database connection
@@ -48,11 +65,18 @@ So, to run the project locally you need:
 
 - wire connection URL
 
-    __WIRE_URL__: in this project we set it up to be `http://localhost:80`, it can be changed easily
+    __WIRE_URL__: in this project we set it up to be `http://localhost:80` (where nginx is configured to listen).
 
 - docker, docker-compose
 
     In ubuntu it can be done like in the official [docs](https://docs.docker.com/compose/install/)
+
+- The project is configured to run locally in a single machine using localhost with different port number for each component. If you want to test it on different hosts or maybe on different addresses, here are what you need to change:
+    
+    - __backend block__ in __nginx.conf__: specify the addresses where you want to run database managers.
+    - __listening address__ in __nginx.conf__: specify where you want nginx server to listen and it should be same as __WIRE_URL__ mentioned above.
+    - __Addresses where database managers are running__: we spcified them as command line arguments provided to the python file by docker-compose. Therefore, either change them in __docker-compose__ or run __database.py__ with command line argument (port number).
+
 
 ## Testing
 
