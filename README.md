@@ -16,11 +16,11 @@
 
 - ### wire
 
-    A Python script is implemented to relay requests from the main server to the Nginx server.
+    This script is implemented to relay requests from the main server to the Nginx server.
 
     The functionality of this script resembles a Remote Procedure Call (RPC), as it receives database requests and Telegram chat IDs, forwarding them to the Nginx server.
 
-- ### nginx server
+- ### Nginx server
 
     To optimize performance, an Nginx server is implemented as a proxy passer and load balancer. This configuration is particularly effective since database operations are significantly more resource-intensive than waiting for new messages.
 
@@ -30,17 +30,15 @@
 
 - ### database managers
 
-    Keep waiting for incoming requests.
+    The database managers patiently await incoming requests.
 
-    Perform the database requests from clients, and send the result of those requests directly to the client. 
-
-    We decided that database managers directly send the results to clients in order to improve processing speed of server which, in this approach, does not need to wait for the results to be ready in order to send it to the clients.
+    Upon receiving a client's request, they execute the corresponding database operations and directly transmit the results to the client. This approach enhances the server's processing speed since it no longer needs to wait for the results before sending them to clients.
 
 - ### Docker
 
-    Basically, we have three docker images, an image for nginx, an image for database manager, and an image for server. Each image has all dependencies of the corresponding files.
-
-    We used docker-compose to run the there instances of of database managers in three different containers, as well as nginx container and server container.
+    The solution employs three Docker images: one for Nginx, one for the database manager, and one for the server. 
+    
+    Each image contains all the necessary dependencies for the respective files, ensuring portability and ease of deployment.
      
 
 ## Usage
