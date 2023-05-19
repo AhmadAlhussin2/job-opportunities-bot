@@ -12,6 +12,7 @@ TOKEN = os.environ['API_KEY']
 
 client = TelegramClient('session', API_ID, API_HASH)
 
+
 async def _start():
     await client.send_message('@jobs_for_you_bot', '/find_job')
     timeout = time.time() + 5
@@ -21,9 +22,9 @@ async def _start():
             print(new_msg[0])
             break
         if time.time() > timeout:
-            assert 0,"the bot is not responding"
-    assert new_msg[0].message=='What type of jobs are you interested in?',\
-            "got an unexpected response from the bot"
+            assert 0, "the bot is not responding"
+    assert new_msg[0].message == 'What type of jobs are you interested in?'
+
 
 async def _click_type():
     lst_msg = await client.get_messages('@jobs_for_you_bot', limit=1)
@@ -35,14 +36,14 @@ async def _click_type():
             print(new_msg[0])
             break
         if time.time() > timeout:
-            assert 0,"the bot is not responding"
-    assert new_msg[0].message=='Okay, and what is your preferable format?',\
-            "got an unexpected response from the bot"
+            assert 0, "the bot is not responding"
+    assert new_msg[0].message == 'Okay, and what is your preferable format?'
+
 
 async def _send_skills():
     lst_msg = await client.get_messages('@jobs_for_you_bot', limit=1)
     timeout = time.time() + 7
-    await client.send_message("@jobs_for_you_bot","c++ / 3")
+    await client.send_message("@jobs_for_you_bot", "c++ / 3")
     time.sleep(1)
     await lst_msg[0].click(0)
     while True:
@@ -51,9 +52,9 @@ async def _send_skills():
             print(new_msg[0])
             break
         if time.time() > timeout:
-            assert 0,"the bot is not responding"
-    assert new_msg[0].message=='okay got the skills',\
-            "got an unexpected response from the bot"
+            assert 0, "the bot is not responding"
+    assert new_msg[0].message == 'okay got the skills'
+
 
 async def _click_format():
     lst_msg = await client.get_messages('@jobs_for_you_bot', limit=1)
@@ -65,28 +66,32 @@ async def _click_format():
             print(new_msg[0])
             break
         if time.time() > timeout:
-            assert 0,"the bot is not responding"
-    assert new_msg[0].message=='Add a skill:',\
-            "got an unexpected response from the bot"
+            assert 0, "the bot is not responding"
+    assert new_msg[0].message == 'Add a skill:'
+
 
 def _wire(test_func):
     with client:
         client.loop.run_until_complete(test_func())
+
 
 def test_start():
     """ test function to see if starting the bot is working or not
     """
     _wire(_start)
 
+
 def test_type():
     """ test function to see if clicking on the job'a type is working or not
     """
     _wire(_click_type)
 
+
 def test_format():
     """ test function to see if clicking on the job'a format is working or not
     """
     _wire(_click_format)
+
 
 def test_job():
     """ test function to send a demo skills
