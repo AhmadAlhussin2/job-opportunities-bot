@@ -39,6 +39,21 @@ async def _click_type():
     assert new_msg[0].message=='Okay, and what is your preferable format?',\
             "got an unexpected response from the bot"
 
+async def _send_skills():
+    lst_msg = await client.get_messages('@jobs_for_you_bot', limit=1)
+    timeout = time.time() + 5
+    await client.send_message("@jobs_for_you_bot","c++ / 3")
+    await lst_msg[0].click(0)
+    while True:
+        new_msg = await client.get_messages('@jobs_for_you_bot', limit=1)
+        if new_msg[0].message == 'okay got the skills':
+            print(new_msg[0])
+            break
+        if time.time() > timeout:
+            assert 0,"the bot is not responding"
+    assert new_msg[0].message=='okay got the skills',\
+            "got an unexpected response from the bot"
+
 async def _click_format():
     lst_msg = await client.get_messages('@jobs_for_you_bot', limit=1)
     timeout = time.time() + 5
@@ -71,3 +86,8 @@ def test_format():
     """ test function to see if clicking on the job'a format is working or not
     """
     _wire(_click_format)
+
+def test_job():
+    """ test function to send a demo skills
+    """
+    _wire(_send_skills)
