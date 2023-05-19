@@ -2,6 +2,10 @@
 
 # Job opportunities bot
 
+## Server setup
+
+![](./static/server-setup.gif)
+
 ## Usage
 
 - Create `.env` file similar to `env.example` with the following variables:
