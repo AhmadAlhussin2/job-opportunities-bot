@@ -28,7 +28,7 @@
 
     Essentially, the Nginx server routes incoming requests to three distinct database managers, each performing post and retrieve operations within the same database.
 
-- ### database managers
+- ### Database managers
 
     The database managers patiently await incoming requests.
 
